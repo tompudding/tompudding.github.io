@@ -47,13 +47,12 @@ function Die(n) {
     for(var i=n;i<elements.length;i+=3) {
         this.cells.push(elements.item(i));
     }
-    this.cells[0].style.backgroundColor = this.green;
-    this.cells[1].style.backgroundColor = this.yellow;
-    this.cells[2].style.backgroundColor = this.red;
 
-    this.cells[0].onclick = this.clickHandler(this,0);
-    this.cells[1].onclick = this.clickHandler(this,1);
-    this.cells[2].onclick = this.clickHandler(this,2);
+    for(var i=0;i<3;i++) {
+        this.cells[i].onclick = this.clickHandler(this,i);
+        this.cells[i].addEventListener('touchstart',this.clickHandler(this,i));
+        this.cells[i].style.backgroundColor = this.colours[i];
+    }
 }
 
 function Dice(num) {

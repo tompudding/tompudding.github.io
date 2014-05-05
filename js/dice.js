@@ -115,8 +115,8 @@ function Tube(green, yellow, red) {
     this.yellow_element = document.getElementsByClassName('tube-yellow-container')[0];
     this.red_element    = document.getElementsByClassName('tube-red-container')[0];
 
-    this.total_ways = function() {
-        return nChoosek(this.green + this.yellow + this.red,3);
+    this.total_ways = function(num_chosen) {
+        return nChoosek(this.green + this.yellow + this.red,3-num_chosen);
     }
 
     this.remove = function(die) {
@@ -257,7 +257,7 @@ function getExpectedBrains(r,y,g) {
     return t;
 }
 
-function getChances(tube,fail_shots) {
+function getChances(tube,fail_shots,g_rerolls,y_rerolls,r_rerolls) {
     var fail_total = 0;
     var total_brains = 0;
     for(var r=0;r<4;r++) {
@@ -274,15 +274,15 @@ function getChances(tube,fail_shots) {
                 if(tube.green < g) {
                     continue;
                 }
-                if(r + g + y != 3) {
+                if(r + g + y + r_rerolls + y_rerolls + g_rerolls != 3) {
                     //extremely inefficient, but the correct way with combinations-with-replacements is a headache
                     //Not a big deal for only 3 types of dice
                     continue;
                 }
                 var green_ways = nChoosek(tube.green,g);
-                var p_dice = (green_ways*yellow_ways*red_ways)/tube.total_ways()
-                var p_fail = getShotChance(r,y,g,fail_shots);
-                var expected_brains = getExpectedBrains(r,y,g);
+                var p_dice = (green_ways*yellow_ways*red_ways)/tube.total_ways(r_rerolls + y_rerolls + g_rerolls)
+                var p_fail = getShotChance(r+r_rerolls,y+y_rerolls,g+g_rerolls,fail_shots);
+                var expected_brains = getExpectedBrains(r+r_rerolls,y+y_rerolls,g+g_rerolls);
                 fail_total += p_fail*p_dice;
                 total_brains += expected_brains*p_dice;
             }
@@ -357,7 +357,21 @@ function Dice(parent,num) {
         }
         
         if(this.chosen_map == 7) {
-            var results = getChances(this.tube,3-this.scores.shots);
+            var g_rerolls = 0;
+            var y_rerolls = 0;
+            var r_rerolls = 0;
+            for(var i=0;i<this.dice.length;i++) {
+                if(this.dice[i].colour == this.dice[i].green) {
+                    g_rerolls += 1;
+                }
+                else if(this.dice[i].colour == this.dice[i].yellow) {
+                    y_rerolls += 1;
+                }
+                else if(this.dice[i].colour == this.dice[i].red) {
+                    r_rerolls += 1;
+                }
+            }
+            var results = getChances(this.tube,3-this.scores.shots,g_rerolls,y_rerolls,r_rerolls);
             var brain_diff = results.brains - results.fail*this.scores.brains;
             if(this.scores.shots >= 3) {
                 this.parent.DiceChosen(true,0,0);

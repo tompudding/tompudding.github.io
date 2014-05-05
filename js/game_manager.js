@@ -4,7 +4,6 @@ function GameManager(num_dice, InputManager, Actuator, StorageManager) {
     this.storageManager = new StorageManager;
     this.actuator       = new Actuator;
 
-    this.inputManager.on("move", this.move.bind(this));
     this.inputManager.on("restart", this.restart.bind(this));
     this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
@@ -20,7 +19,7 @@ GameManager.prototype.restart = function () {
 
 // Keep playing after winning (allows going over 2048)
 GameManager.prototype.keepPlaying = function () {
-    this.keepPlaying = true;
+    this.dice.nextRoll();
     this.actuator.continueGame(); // Clear the game won/lost message
 };
 
@@ -31,25 +30,25 @@ GameManager.prototype.isGameTerminated = function () {
 
 // Set up the game
 GameManager.prototype.setup = function () {
-    this.dice        = new Dice(this.num_dice);
+    this.dice        = new Dice(this,this.num_dice);
     this.score       = 0;
     this.over        = false;
-    this.won         = false;
+    this.chosen      = false;
     this.keepPlaying = false;
+    this.fail        = 0;
+    this.brains      = 0;
 
     // Update the actuator
     this.actuate();
 };
 
-// Adds a tile in a random position
-GameManager.prototype.addRandomTile = function () {
-    if (this.grid.cellsAvailable()) {
-        var value = Math.random() < 0.9 ? 2 : 4;
-        var tile = new Tile(this.grid.randomAvailableCell(), value);
-
-        this.grid.insertTile(tile);
-    }
-};
+GameManager.prototype.DiceChosen = function(over,fail,brains) {
+    this.chosen = true;
+    this.over   = over;
+    this.fail   = fail;
+    this.brains = brains;
+    this.actuate();
+}
 
 // Sends the updated grid to the actuator
 GameManager.prototype.actuate = function () {
@@ -65,7 +64,9 @@ GameManager.prototype.actuate = function () {
     this.actuator.actuate(this.grid, {
         score:      this.score,
         over:       this.over,
-        won:        this.won,
+        chosen:     this.chosen,
+        fail:       this.fail,
+        brains:     this.brains,
         bestScore:  this.storageManager.getBestScore(),
         terminated: this.isGameTerminated()
     });
@@ -87,70 +88,6 @@ GameManager.prototype.moveTile = function (tile, cell) {
     this.grid.cells[tile.x][tile.y] = null;
     this.grid.cells[cell.x][cell.y] = tile;
     tile.updatePosition(cell);
-};
-
-// Move tiles on the grid in the specified direction
-GameManager.prototype.move = function (direction) {
-    // 0: up, 1: right, 2: down, 3: left
-    var self = this;
-
-    if (this.isGameTerminated()) return; // Don't do anything if the game's over
-
-    var cell, tile;
-
-    var vector     = this.getVector(direction);
-    var traversals = this.buildTraversals(vector);
-    var moved      = false;
-
-    // Save the current tile positions and remove merger information
-    this.prepareTiles();
-
-    // Traverse the grid in the right direction and move tiles
-    traversals.x.forEach(function (x) {
-        traversals.y.forEach(function (y) {
-            cell = { x: x, y: y };
-            tile = self.grid.cellContent(cell);
-
-            if (tile) {
-                var positions = self.findFarthestPosition(cell, vector);
-                var next      = self.grid.cellContent(positions.next);
-
-                // Only one merger per row traversal?
-                if (next && next.value === tile.value && !next.mergedFrom) {
-                    var merged = new Tile(positions.next, tile.value * 2);
-                    merged.mergedFrom = [tile, next];
-
-                    self.grid.insertTile(merged);
-                    self.grid.removeTile(tile);
-
-                    // Converge the two tiles' positions
-                    tile.updatePosition(positions.next);
-
-                    // Update the score
-                    self.score += merged.value;
-
-                    // The mighty 2048 tile
-                    if (merged.value === 2048) self.won = true;
-                } else {
-                    self.moveTile(tile, positions.farthest);
-                }
-
-                if (!self.positionsEqual(cell, tile)) {
-                    moved = true; // The tile moved from its original cell!
-                }
-            }
-        });
-    });
-
-    if (moved) {
-        this.addRandomTile();
-
-        if (!this.movesAvailable()) {
-            this.over = true; // Game over!
-        }
-
-        this.actuate();
-    }
 };
 
 // Get the vector representing the chosen direction

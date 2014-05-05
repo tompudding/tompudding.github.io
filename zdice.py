@@ -141,6 +141,7 @@ def get_chances(tube,fail_shots):
                 p_dice = float(green_ways*yellow_ways*red_ways)/tube.total_ways()
                 p_fail = get_shot_chance(r,y,g,fail_shots)
                 expected_brains = get_expected_brains(r,y,g)
+                print g,y,r,p_fail,p_dice
                 fail_total += p_fail*p_dice
                 total_brains += expected_brains*p_dice
                 #print r,y,g,p_dice,p_fail,p_dice*p_fail

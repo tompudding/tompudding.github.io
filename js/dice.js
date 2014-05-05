@@ -25,6 +25,7 @@ function Die(parent,n) {
                 colour = obj.colours[index];
                 obj.setColour(colour);
                 obj.state = obj.states.CHOOSE_FACE;
+                obj.parent.colourChosen(obj.colour,obj.reroll);
             }
             else if(obj.state == obj.states.CHOOSE_FACE) {
                 obj.state = obj.states.CHOSEN_ALL;
@@ -35,7 +36,7 @@ function Die(parent,n) {
                         obj.cells[i].style.backgroundColor = obj.grey;
                     }
                 }
-                obj.parent.DieChosen(obj.die_index,obj.colour,index,obj.reroll);
+                obj.parent.DieChosen(obj.die_index,obj.colour,index);
             }
         }
     }
@@ -339,21 +340,24 @@ function Dice(parent,num) {
     
     //hack
     this.colours = this.dice[0].colours;
+
+    this.colourChosen = function(colour,reroll) {
+        if(reroll == false) {
+            var colour_index = this.colours.indexOf(colour);
+            this.tube.remove(colour_index);
+            for(var i=0;i<this.dice.length;i++) {
+                this.dice[i].updateColours();
+            }
+        }
+    }
     
-    this.DieChosen = function(die_index,colour,face,reroll) {
-        var colour_index = this.colours.indexOf(colour);
+    this.DieChosen = function(die_index,colour,face) {
         this.chosen_map |= (1<<die_index);
         if(face == Face.BRAINS) {
             this.scores.adjustBrains(1);
         }
         else if(face == Face.SHOT) {
             this.scores.adjustShots(1);
-        }
-        if(reroll == false) {
-            this.tube.remove(colour_index);
-            for(var i=0;i<this.dice.length;i++) {
-                this.dice[i].updateColours();
-            }
         }
         
         if(this.chosen_map == 7) {

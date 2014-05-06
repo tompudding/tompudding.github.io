@@ -280,6 +280,7 @@ function getChances(tube,fail_shots,g_rerolls,y_rerolls,r_rerolls) {
                     //Not a big deal for only 3 types of dice
                     continue;
                 }
+                console.log((r + g + y) + " " + (r_rerolls + y_rerolls + g_rerolls))
                 var green_ways = nChoosek(tube.green,g);
                 var p_dice = (green_ways*yellow_ways*red_ways)/tube.total_ways(r_rerolls + y_rerolls + g_rerolls)
                 var p_fail = getShotChance(r+r_rerolls,y+y_rerolls,g+g_rerolls,fail_shots);
@@ -365,14 +366,16 @@ function Dice(parent,num) {
             var y_rerolls = 0;
             var r_rerolls = 0;
             for(var i=0;i<this.dice.length;i++) {
-                if(this.dice[i].colour == this.dice[i].green) {
-                    g_rerolls += 1;
-                }
-                else if(this.dice[i].colour == this.dice[i].yellow) {
-                    y_rerolls += 1;
-                }
-                else if(this.dice[i].colour == this.dice[i].red) {
-                    r_rerolls += 1;
+                if(this.dice[i].face == Face.FEET) {
+                    if(this.dice[i].colour == this.dice[i].green) {
+                        g_rerolls += 1;
+                    }
+                    else if(this.dice[i].colour == this.dice[i].yellow) {
+                        y_rerolls += 1;
+                    }
+                    else if(this.dice[i].colour == this.dice[i].red) {
+                        r_rerolls += 1;
+                    }
                 }
             }
             var results = getChances(this.tube,3-this.scores.shots,g_rerolls,y_rerolls,r_rerolls);
